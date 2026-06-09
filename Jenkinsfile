@@ -15,17 +15,16 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Test (Docker isolated)') {
             steps {
-                echo "🧪 Running tests"
+                echo "🧪 Running tests inside Docker"
 
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install pytest
-                    pytest -v
+                    docker run --rm \
+                    -v $PWD:/app \
+                    -w /app \
+                    python:3.11 \
+                    bash -c "pip install --upgrade pip && pip install -r requirements.txt && pip install pytest && pytest -v"
                 '''
             }
         }
@@ -49,8 +48,8 @@ pipeline {
                 echo "📦 Push image"
 
                 sh '''
-                    docker tag devops-api:latest localhost:5000/devops-api:latest
-                    docker push localhost:5000/devops-api:latest
+                    docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
+                    docker push ${REGISTRY}/${IMAGE}
                 '''
             }
         }
@@ -67,6 +66,7 @@ pipeline {
         success {
             echo "✅ PIPELINE SUCCESS"
         }
+
         failure {
             echo "❌ PIPELINE FAILED"
         }
