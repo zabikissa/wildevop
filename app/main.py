@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
-from database import engine, SessionLocal
-from models import Base, User
+from app.database import engine, SessionLocal
+from app.models import Base, User
 
 app = FastAPI()
 
@@ -14,15 +14,10 @@ def health():
 
 @app.get("/users")
 def get_users():
-
     db = SessionLocal()
-
     users = db.query(User).all()
 
     return [
-        {
-            "id": u.id,
-            "name": u.name
-        }
+        {"id": u.id, "name": u.name}
         for u in users
     ]
