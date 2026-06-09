@@ -47,10 +47,11 @@ pipeline {
         stage('Push Registry') {
             steps {
                 echo "📦 Push image"
-                sh """
-                    docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
-                    docker push ${REGISTRY}/${IMAGE}
-                """
+
+                sh '''
+                    docker tag devops-api:latest localhost:5000/devops-api:latest
+                    docker push localhost:5000/devops-api:latest
+                '''
             }
         }
 
@@ -67,7 +68,7 @@ pipeline {
             echo "✅ PIPELINE SUCCESS"
         }
         failure {
-            echo "❌ PIPELINE FAILED - check logs"
+            echo "❌ PIPELINE FAILED"
         }
     }
 }
