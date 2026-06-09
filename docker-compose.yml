@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+
+    environment:
+      POSTGRES_DB: devopsdb
+      POSTGRES_USER: devops
+      POSTGRES_PASSWORD: devops
+
+    ports:
+      - "5433:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devops -d devopsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build: .
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
