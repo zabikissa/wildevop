@@ -19,9 +19,11 @@ pipeline {
             steps {
                 echo "🧪 Running tests"
                 sh '''
-                    export PYTHONPATH=.
-                    pip install -r requirements.txt
-                    pytest -v
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install -r requirements.txt
+                    python3 -m pip install pytest
+
+                    PYTHONPATH=. python3 -m pytest -v
                 '''
             }
         }
@@ -62,9 +64,8 @@ pipeline {
         success {
             echo "✅ PIPELINE SUCCESS"
         }
-
         failure {
-            echo "❌ PIPELINE FAILED - check logs"
+            echo "❌ PIPELINE FAILED"
         }
     }
 }
