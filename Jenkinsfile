@@ -1,34 +1,4 @@
-pipeline {
-    agent any
-
-    environment {
-        IMAGE = "devops-api:latest"
-        REGISTRY = "localhost:5000"
-    }
-
-    stages {
-
-        stage('Checkout') {
-            steps {
-                echo "📥 Checkout code"
-                checkout scm
-            }
-        }
-
-        stage('Test (Docker isolated)') {
-            steps {
-                echo "🧪 Running tests inside Docker"
-
-                sh '''
-                    docker run --rm \
-                    -v $PWD:/app \
-                    -w /app \
-                    python:3.11 \
-                    bash -c "pip install --upgrade pip && pip install -r requirements.txt && pip install pytest && pytest -v"
-                '''
-            }
-        }
-
+root@srv2:~/devops-enterprise-lab# vi  Jenkinsfile
         stage('Build Docker') {
             steps {
                 echo "🐳 Building Docker image"
@@ -70,5 +40,4 @@ pipeline {
         failure {
             echo "❌ PIPELINE FAILED"
         }
-    }
-}
+  
