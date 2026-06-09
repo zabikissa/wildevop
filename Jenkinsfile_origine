@@ -2,48 +2,69 @@ pipeline {
     agent any
 
     environment {
-        IMAGE = "devops-api:latest"
+        IMAGE = "wildevop-app:latest"
+        REGISTRY = "docker.io/wilfrid"
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/zabikissa/wildevop.git'
+                echo "📥 Checkout code"
+                checkout scm
             }
         }
 
         stage('Test') {
             steps {
-                sh 'pip install -r requirements.txt'
-                sh 'pytest -v'
+                echo "🧪 Running tests"
+                sh '''
+                    export PYTHONPATH=.
+                    pip install -r requirements.txt
+                    pytest -v
+                '''
             }
         }
 
         stage('Build Docker') {
             steps {
-                sh 'docker build -t $IMAGE .'
+                echo "🐳 Building Docker image"
+                sh "docker build -t ${IMAGE} ."
             }
         }
 
         stage('Scan Security (Trivy)') {
             steps {
-                sh 'trivy image $IMAGE || true'
+                echo "🔍 Security scan"
+                sh "trivy image ${IMAGE} || true"
             }
         }
 
         stage('Push Registry') {
             steps {
-                sh 'docker tag $IMAGE localhost:5000/$IMAGE'
-                sh 'docker push localhost:5000/$IMAGE'
+                echo "📦 Push image"
+                sh '''
+                    docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
+                    docker push ${REGISTRY}/${IMAGE}
+                '''
             }
         }
 
         stage('Deploy Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                echo "☸️ Deploy to Kubernetes"
+                sh "kubectl apply -f k8s/"
             }
         }
     }
-}
 
+    post {
+        success {
+            echo "✅ PIPELINE SUCCESS"
+        }
+
+        failure {
+            echo "❌ PIPELINE FAILED - check logs"
+        }
+    }
+}

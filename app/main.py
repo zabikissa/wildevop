@@ -1,16 +1,16 @@
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
-from app.database import engine, SessionLocal
-from app.models import Base, User
+from database import SessionLocal
+from models import User
 
 app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
 
 @app.get("/health")
 def health():
     return {"status": "UP"}
+
 
 @app.get("/users")
 def get_users():
@@ -21,3 +21,5 @@ def get_users():
         {"id": u.id, "name": u.name}
         for u in users
     ]
+
+
