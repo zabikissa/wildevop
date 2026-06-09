@@ -1,5 +1,32 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+
+  - name: python
+    image: python:3.11-slim
+    command: ['cat']
+    tty: true
+
+  - name: docker
+    image: docker:24-cli
+    command: ['cat']
+    tty: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+        }
+    }
 
     environment {
         IMAGE = "devops-api:latest"
@@ -9,67 +36,37 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "📥 Checkout code"
-                git branch: 'main', url: 'https://github.com/zabikissa/wildevop.git'
-            }
-        }
-
-        stage('Debug Environment') {
-            steps {
-                echo "🧠 Checking tools inside Jenkins container"
-                sh 'whoami || true'
-                sh 'python3 --version || true'
-                sh 'pip3 --version || true'
-                sh 'which python3 || true'
-                sh 'which pip3 || true'
-                sh 'docker --version || true'
+                git 'https://github.com/zabikissa/wildevop.git'
             }
         }
 
         stage('Test') {
             steps {
-                echo "🧪 Running tests"
-                sh 'python3 -m pip install -r requirements.txt || true'
-                sh 'pytest -v || true'
+                container('python') {
+                    sh '''
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install pytest
+                    pytest -v
+                    '''
+                }
             }
         }
 
         stage('Build Docker') {
             steps {
-                echo "🐳 Building Docker image"
-                sh 'docker build -t $IMAGE .'
+                container('docker') {
+                    sh 'docker build -t $IMAGE .'
+                }
             }
         }
 
-        stage('Scan Security (Trivy)') {
+        stage('Deploy') {
             steps {
-                echo "🔍 Security scan"
-                sh 'trivy image $IMAGE || true'
+                container('docker') {
+                    sh 'kubectl apply -f k8s/'
+                }
             }
-        }
-
-        stage('Push Registry') {
-            steps {
-                echo "📦 Push image"
-                sh 'docker tag $IMAGE localhost:5000/$IMAGE || true'
-                sh 'docker push localhost:5000/$IMAGE || true'
-            }
-        }
-
-        stage('Deploy Kubernetes') {
-            steps {
-                echo "☸️ Deploy to Kubernetes"
-                sh 'kubectl apply -f k8s/ || true'
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "✅ PIPELINE SUCCESS"
-        }
-        failure {
-            echo "❌ PIPELINE FAILED - check logs"
         }
     }
 }
