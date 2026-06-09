@@ -1,11 +1,5 @@
 from fastapi.testclient import TestClient
-import sys
-import os
-
-# Ajoute le dossier racine du projet au PYTHONPATH
-sys.path.append(os.path.abspath("."))
-
-from main import app
+from app.main import app   # ✅ CORRECTION ICI
 
 client = TestClient(app)
 
