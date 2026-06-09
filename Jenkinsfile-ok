@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE = "wildevop-app:latest"
-        REGISTRY = "docker.io/wilfrid"
+        IMAGE = "devops-api:latest"
+        REGISTRY = "localhost:5000"
     }
 
     stages {
@@ -15,13 +15,16 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Test (Docker isolated)') {
             steps {
-                echo "🧪 Running tests"
+                echo "🧪 Running tests inside Docker"
+
                 sh '''
-                    export PYTHONPATH=.
-                    pip install -r requirements.txt
-                    pytest -v
+                    docker run --rm \
+                    -v $PWD:/app \
+                    -w /app \
+                    python:3.11 \
+                    bash -c "pip install --upgrade pip && pip install -r requirements.txt && pip install pytest && pytest -v"
                 '''
             }
         }
@@ -43,6 +46,7 @@ pipeline {
         stage('Push Registry') {
             steps {
                 echo "📦 Push image"
+
                 sh '''
                     docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
                     docker push ${REGISTRY}/${IMAGE}
@@ -64,7 +68,7 @@ pipeline {
         }
 
         failure {
-            echo "❌ PIPELINE FAILED - check logs"
+            echo "❌ PIPELINE FAILED"
         }
     }
 }
