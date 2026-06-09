@@ -8,32 +8,47 @@ pipeline {
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                echo "📥 Checkout code"
+                checkout scm
+            }
+        }
+
         stage('Test') {
             steps {
                 echo "🧪 Running tests"
 
-                sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                pip install pytest
-                pytest -v
-                '''
+                container('python') {
+                    sh '''
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pip install pytest
+                        pytest -v
+                    '''
+                }
             }
         }
 
         stage('Build Docker') {
             steps {
                 echo "🐳 Building Docker image"
-                sh "docker build -t ${IMAGE} ."
+
+                container('docker') {
+                    sh "docker build -t ${IMAGE} ."
+                }
             }
         }
 
         stage('Scan Security (Trivy)') {
             steps {
                 echo "🔍 Security scan"
-                sh "trivy image ${IMAGE} || true"
+
+                container('docker') {
+                    sh "trivy image ${IMAGE} || true"
+                }
             }
         }
 
@@ -41,17 +56,22 @@ pipeline {
             steps {
                 echo "📦 Push image"
 
-                sh """
-                docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
-                docker push ${REGISTRY}/${IMAGE}
-                """
+                container('docker') {
+                    sh """
+                        docker tag ${IMAGE} ${REGISTRY}/${IMAGE}
+                        docker push ${REGISTRY}/${IMAGE}
+                    """
+                }
             }
         }
 
         stage('Deploy Kubernetes') {
             steps {
                 echo "☸️ Deploy to Kubernetes"
-                sh "kubectl apply -f k8s/"
+
+                container('docker') {
+                    sh "kubectl apply -f k8s/"
+                }
             }
         }
     }
